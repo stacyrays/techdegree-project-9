@@ -5,6 +5,8 @@ const express = require("express");
 const morgan = require("morgan");
 const { sequelize, models, Database } = require("./seed/database");
 
+//const User = require("./models/user").User;
+
 const { User, Course } = models;
 
 // variable to enable global error logging
@@ -19,13 +21,26 @@ app.use(morgan("dev"));
 
 (async () => {
   try {
-    // Test the connection to the database
-    console.log("Connection to the database successful!");
-    await sequelize.authenticate();
+    // Test the connection to the databasenp
+    await sequelize
+      .authenticate()
+      .then(() => {
+        console.log("Connection has been established successfully!");
+      })
+      .catch(err => {
+        console.error("Unable to connect to the database:", err);
+      });
 
     // Sync the models
-    console.log("Synchronizing the models with the database...");
-    //await sequelize.sync({ force: true });
+
+    await sequelize
+      .sync({ force: true })
+      .then(() => {
+        console.log("Synchronizing successful!");
+      })
+      .catch(err => {
+        console.error("Unable to connect sync:", err);
+      });
 
     //process.exit();
   } catch (error) {
@@ -39,6 +54,24 @@ app.use(morgan("dev"));
 })();
 
 // TODO setup your api routes here
+function asyncHandler(cb) {
+  return async (req, res, next) => {
+    try {
+      await cb(req, res, next);
+    } catch (err) {
+      next(err);
+    }
+  };
+}
+
+app.get(
+  "/api/users",
+  asyncHandler(async (req, res) => {
+    const users = await User.findAll().then(users => {
+      console.log("All users:", JSON.stringify(users, null, 4));
+    });
+  })
+);
 
 // setup a friendly greeting for the root route
 app.get("/", (req, res) => {
