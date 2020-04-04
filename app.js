@@ -1,12 +1,14 @@
 "use strict";
 
-// load modules
+// Load modules
 const express = require("express");
 const morgan = require("morgan");
-const router = express.Router();
-const { sequelize, models, Database } = require("./seed/database");
-const User = require("./models/user");
-const Course = require("./models/course");
+
+// Load database
+const db = require("./db");
+
+// Load routes
+const routes = require("./routes");
 
 // variable to enable global error logging
 const enableGlobalErrorLogging =
@@ -18,30 +20,26 @@ const app = express();
 // setup morgan which gives us http request logging
 app.use(morgan("dev"));
 
+// setup body-parser
+app.use(express.json());
+
+// setup routes
+app.use("/api", routes);
+
+console.log("Testing the connection to the database...");
+
+// async IIFE
 (async () => {
   try {
-    // Test the connection to the databasenp
-    await sequelize
-      .authenticate()
-      .then(() => {
-        console.log("Connection has been established successfully!");
-      })
-      .catch(err => {
-        console.error("Unable to connect to the database:", err);
-      });
+    // Test the connection to the database
+    await db.sequelize.authenticate();
+    console.log("Connection to the database successful!");
 
     // Sync the models
+    console.log("Synchronizing the models with the database...");
+    await db.sequelize.sync();
 
-    await sequelize
-      .sync({ force: true })
-      .then(() => {
-        console.log("Synchronizing successful!");
-      })
-      .catch(err => {
-        console.error("Unable to connect sync:", err);
-      });
-
-    //process.exit();
+    console.log("The app is running correctly");
   } catch (error) {
     if (error.name === "SequelizeValidationError") {
       const errors = error.errors.map(err => err.message);
@@ -51,45 +49,6 @@ app.use(morgan("dev"));
     }
   }
 })();
-
-//TODO setup your api routes here
-function asyncHandler(cb) {
-  return async (req, res, next) => {
-    try {
-      await cb(req, res, next);
-    } catch (err) {
-      next(err);
-    }
-  };
-}
-
-app.get(
-  "/api/users",
-  asyncHandler(async (req, res) => {
-    const users = await User.findAll()
-      .then(users => {
-        console.log("All users:", JSON.stringify(users, null, 4));
-        //console.log(users);
-      })
-      .catch(err => console.log(err));
-  })
-);
-
-// setup a friendly greeting for the root route
-app.get("/", (req, res) => {
-  res.json({
-    message: "Welcome to the REST API project!"
-  });
-});
-
-app.get("/api/users", (req, res) => {
-  res.json({
-    message: "User's route",
-    error: "why"
-  });
-  //res.models({ User });
-  //console.log("a message");
-});
 
 // send 404 if no other route matched
 app.use((req, res) => {
