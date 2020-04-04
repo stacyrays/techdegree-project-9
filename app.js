@@ -3,11 +3,10 @@
 // load modules
 const express = require("express");
 const morgan = require("morgan");
+const router = express.Router();
 const { sequelize, models, Database } = require("./seed/database");
-
-//const User = require("./models/user").User;
-
-const { User, Course } = models;
+const User = require("./models/user");
+const Course = require("./models/course");
 
 // variable to enable global error logging
 const enableGlobalErrorLogging =
@@ -53,7 +52,7 @@ app.use(morgan("dev"));
   }
 })();
 
-// TODO setup your api routes here
+//TODO setup your api routes here
 function asyncHandler(cb) {
   return async (req, res, next) => {
     try {
@@ -67,9 +66,12 @@ function asyncHandler(cb) {
 app.get(
   "/api/users",
   asyncHandler(async (req, res) => {
-    const users = await User.findAll().then(users => {
-      console.log("All users:", JSON.stringify(users, null, 4));
-    });
+    const users = await User.findAll()
+      .then(users => {
+        console.log("All users:", JSON.stringify(users, null, 4));
+        //console.log(users);
+      })
+      .catch(err => console.log(err));
   })
 );
 
@@ -78,6 +80,15 @@ app.get("/", (req, res) => {
   res.json({
     message: "Welcome to the REST API project!"
   });
+});
+
+app.get("/api/users", (req, res) => {
+  res.json({
+    message: "User's route",
+    error: "why"
+  });
+  //res.models({ User });
+  //console.log("a message");
 });
 
 // send 404 if no other route matched
