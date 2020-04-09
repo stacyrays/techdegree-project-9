@@ -1,6 +1,10 @@
 const express = require("express");
 const router = express.Router();
+
+//Load validation npm
 const { check, validationResult } = require("express-validator");
+
+//Load bcrypt js and basic-auth for authentication
 const bcryptjs = require("bcryptjs");
 const auth = require("basic-auth");
 
@@ -14,6 +18,7 @@ const { User, Course } = db.models;
  * @param {Function} next - The function to call to pass execution to the next middleware.
  */
 
+//Async handler
 function asyncHandler(cb) {
   return async (req, res, next) => {
     try {
@@ -31,10 +36,11 @@ const authenticateUser = async (req, res, next) => {
   const credentials = auth(req);
 
   if (credentials) {
-    // Look for a user whose `username` matches the credentials `name` property.
+    // Look for a user whose `username` matches the credentials `emailAddress` property.
     const users = await User.findAll();
     const user = users.find(u => u.emailAddress === credentials.name);
 
+    //Check to see if password matches the username password
     if (user) {
       const authenticated = bcryptjs.compareSync(
         credentials.pass,
@@ -45,7 +51,7 @@ const authenticateUser = async (req, res, next) => {
           `Authentication successful for username: ${user.emailAddress}`
         );
 
-        // Store the user on the Request object.
+        // Store the authenticated user on the Request object
         req.currentUser = user;
       } else {
         message = `Authentication failure for username: ${user.emailAddress}`;
@@ -65,14 +71,14 @@ const authenticateUser = async (req, res, next) => {
   }
 };
 
-// setup a friendly greeting for the root route
+// Setup greeting for route root
 router.get("/", (req, res) => {
   res.json({
     message: "Welcome to the REST API project!"
   });
 });
 
-// GET request to /users to return the currently authenticated user
+// GET request to return the currently authenticated user
 router.get(
   "/users",
   authenticateUser,
@@ -85,7 +91,7 @@ router.get(
   })
 );
 
-/* Add a user */
+// Add a user
 router.post(
   "/users",
   [
@@ -138,7 +144,7 @@ router.post(
   })
 );
 
-/* Get all courses  */
+// Get all courses
 router.get(
   "/courses",
   asyncHandler(async (req, res) => {
@@ -166,7 +172,7 @@ router.get(
   })
 );
 
-/* Get a course using id  */
+// Get a course using id
 router.get(
   "/courses/:id",
   asyncHandler(async (req, res) => {
@@ -195,7 +201,7 @@ router.get(
   })
 );
 
-/* Post course  */
+// Post course
 router.post(
   "/courses",
   authenticateUser,
@@ -226,7 +232,7 @@ router.post(
   })
 );
 
-/* Update a course. */
+// Update a course
 router.put(
   "/courses/:id",
   authenticateUser,
@@ -262,7 +268,7 @@ router.put(
   })
 );
 
-/* Delete individual course  */
+// Delete individual course
 router.delete(
   "/courses/:id/delete",
   authenticateUser,
