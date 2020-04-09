@@ -165,7 +165,7 @@ router.get(
       ]
     });
     if (courses) {
-      res.status(200).json(course);
+      res.status(200).json(courses);
     } else {
       res.status(404).json({ message: "Cannot find courses" });
     }
