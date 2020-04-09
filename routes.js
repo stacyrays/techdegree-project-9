@@ -220,7 +220,7 @@ router.post(
       return res.status(400).json({ errors: errorMessages });
     } else {
       const course = await Course.create(req.body);
-      res.location("/");
+      res.location(`courses/${courses.id}`);
       res.status(201).end();
     }
   })
@@ -263,15 +263,21 @@ router.put(
 );
 
 /* Delete individual course  */
-router.post(
+router.delete(
   "/courses/:id/delete",
   authenticateUser,
   asyncHandler(async (req, res) => {
     const course = await Course.findByPk(req.params.id);
     if (course) {
-      await course.destroy();
-      res.location("/");
-      res.status(204).end();
+      if (req.currentUser.id === course.userId) {
+        await course.destroy();
+        res.location("/");
+        res.status(204).end();
+      } else {
+        res.status(403).json({
+          message: "You're not the owner so can't delete this course!"
+        });
+      }
     } else {
       console.log("error");
     }
