@@ -38,7 +38,7 @@ const authenticateUser = async (req, res, next) => {
   if (credentials) {
     // Look for a user whose `username` matches the credentials `emailAddress` property.
     const users = await User.findAll();
-    const user = users.find(u => u.emailAddress === credentials.name);
+    const user = users.find((u) => u.emailAddress === credentials.name);
 
     //Check to see if password matches the username password
     if (user) {
@@ -74,7 +74,7 @@ const authenticateUser = async (req, res, next) => {
 // Setup greeting for route root
 router.get("/", (req, res) => {
   res.json({
-    message: "Welcome to the REST API project!"
+    message: "Welcome to the REST API project!",
   });
 });
 
@@ -85,7 +85,7 @@ router.get(
   asyncHandler(async (req, res) => {
     const user = await User.findAll({
       attributes: ["id", "firstName", "lastName", "emailAddress"],
-      where: { id: req.currentUser.id }
+      where: { id: req.currentUser.id },
     });
     res.status(200).json(user);
   })
@@ -106,7 +106,7 @@ router.post(
       .withMessage('Please provide a value for "emailAddress"'),
     check("password")
       .exists()
-      .withMessage('Please provide a value for "password"')
+      .withMessage('Please provide a value for "password"'),
   ],
   asyncHandler(async (req, res) => {
     // Attempt to get the validation result from the Request object.
@@ -115,14 +115,14 @@ router.post(
     // If there are validation errors...
     if (!errors.isEmpty()) {
       // Use the Array `map()` method to get a list of error messages.
-      const errorMessages = errors.array().map(error => error.msg);
+      const errorMessages = errors.array().map((error) => error.msg);
 
       // Return the validation errors to the client.
       res.status(400).json({ errors: errorMessages });
     } else {
       // See if email exists already
       const emailAddresses = await User.findOne({
-        where: { emailAddress: req.body.emailAddress }
+        where: { emailAddress: req.body.emailAddress },
       });
       console.log(emailAddresses);
       if (emailAddresses) {
@@ -135,7 +135,7 @@ router.post(
           firstName: req.body.firstName,
           lastName: req.body.lastName,
           emailAddress: req.body.emailAddress,
-          password: req.body.password
+          password: req.body.password,
         });
         res.location("/");
         res.status(201).end();
@@ -154,15 +154,15 @@ router.get(
         "title",
         "description",
         "estimatedTime",
-        "materialsNeeded"
+        "materialsNeeded",
       ],
       include: [
         {
           model: User,
           as: "owner",
-          attributes: ["id", "firstName", "lastName", "emailAddress"]
-        }
-      ]
+          attributes: ["id", "firstName", "lastName", "emailAddress"],
+        },
+      ],
     });
     if (courses) {
       res.status(200).json(courses);
@@ -183,15 +183,15 @@ router.get(
         "title",
         "description",
         "estimatedTime",
-        "materialsNeeded"
+        "materialsNeeded",
       ],
       include: [
         {
           model: User,
           as: "owner",
-          attributes: ["id", "firstName", "lastName", "emailAddress"]
-        }
-      ]
+          attributes: ["id", "firstName", "lastName", "emailAddress"],
+        },
+      ],
     });
     if (course) {
       res.status(200).json(course);
@@ -206,12 +206,10 @@ router.post(
   "/courses",
   authenticateUser,
   [
-    check("title")
-      .exists()
-      .withMessage('Please provide a value for "title"'),
+    check("title").exists().withMessage('Please provide a value for "title"'),
     check("description")
       .exists()
-      .withMessage('Please provide a value for "description"')
+      .withMessage('Please provide a value for "description"'),
   ],
   asyncHandler(async (req, res) => {
     // Attempt to get the validation result from the Request object.
@@ -220,13 +218,13 @@ router.post(
     // If there are validation errors...
     if (!errors.isEmpty()) {
       // Use the Array `map()` method to get a list of error messages.
-      const errorMessages = errors.array().map(error => error.msg);
+      const errorMessages = errors.array().map((error) => error.msg);
 
       // Return the validation errors to the client.
       return res.status(400).json({ errors: errorMessages });
     } else {
       const course = await Course.create(req.body);
-      res.location(`courses/${courses.id}`);
+      res.location(`courses/${course.id}`);
       res.status(201).end();
     }
   })
@@ -237,12 +235,10 @@ router.put(
   "/courses/:id",
   authenticateUser,
   [
-    check("title")
-      .exists()
-      .withMessage('Please provide a value for "title"'),
+    check("title").exists().withMessage('Please provide a value for "title"'),
     check("description")
       .exists()
-      .withMessage('Please provide a value for "description"')
+      .withMessage('Please provide a value for "description"'),
   ],
   asyncHandler(async (req, res) => {
     // Attempt to get the validation result from the Request object.
@@ -251,16 +247,22 @@ router.put(
     // If there are validation errors...
     if (!errors.isEmpty()) {
       // Use the Array `map()` method to get a list of error messages.
-      const errorMessages = errors.array().map(error => error.msg);
+      const errorMessages = errors.array().map((error) => error.msg);
 
       // Return the validation errors to the client.
       return res.status(400).json({ errors: errorMessages });
     } else {
       const course = await Course.findByPk(req.params.id);
       if (course) {
-        await course.update(req.body);
-        res.location("/");
-        res.status(204).end();
+        if (req.currentUser.id === course.userId) {
+          await course.update(req.body);
+          res.location(`courses/${course.id}`);
+          res.status(204).end();
+        } else {
+          res.status(403).json({
+            message: "You're not the owner so can't update this course!",
+          });
+        }
       } else {
         res.status(403).json({ message: "You do not own this course" });
       }
@@ -270,7 +272,7 @@ router.put(
 
 // Delete individual course
 router.delete(
-  "/courses/:id/delete",
+  "/courses/:id",
   authenticateUser,
   asyncHandler(async (req, res) => {
     const course = await Course.findByPk(req.params.id);
@@ -281,11 +283,11 @@ router.delete(
         res.status(204).end();
       } else {
         res.status(403).json({
-          message: "You're not the owner so can't delete this course!"
+          message: "You're not the owner so can't delete this course!",
         });
       }
     } else {
-      console.log("error");
+      res.status(404).json({ message: "Cannot find course" });
     }
   })
 );
